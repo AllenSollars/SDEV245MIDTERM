@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>SHA-256 + AES-GCM Crypto Tool</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background: #01012b;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        .title-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #ffffff;
+            letter-spacing: 0.02em;
+        }
+
+        .badge {
+            font-size: 11px;
+            font-weight: 500;
+            padding: 3px 9px;
+            border-radius: 20px;
+            background: #1e1e1e;
+            border: 1px solid #333;
+            color: #888;
+            letter-spacing: 0.04em;
+        }
+
+        .tabs {
+            display: flex;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 1.75rem;
+            width: fit-content;
+        }
+
+        .tab {
+            padding: 8px 22px;
+            font-size: 13px;
+            font-weight: 500;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            color: #666;
+            font-family: 'Courier New', Courier, monospace;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .tab.active {
+            background: #ffffff;
+            color: #0f0f0f;
+        }
+
+        .tab:not(:last-child) {
+            border-right: 1px solid #2a2a2a;
+        }
+
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        .field { margin-bottom: 1.25rem; }
+
+        label {
+            display: block;
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 6px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        textarea, input[type="text"] {
+            width: 100%;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 13px;
+            font-family: 'Courier New', Courier, monospace;
+            color: #e0e0e0;
+            transition: border-color 0.15s;
+        }
+
+        textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+
+        textarea:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #555;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #555;
+            margin-top: 5px;
+            line-height: 1.5;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 9px 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: transparent;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: 'Courier New', Courier, monospace;
+            color: #ccc;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .btn:hover { background: #1e1e1e; }
+
+        .btn.primary {
+            background: #ffffff;
+            color: #0f0f0f;
+            border-color: #ffffff;
+        }
+
+        .btn.primary:hover { opacity: 0.85; }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .output-block {
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #1a1a1a;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .output-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: #666;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .output-val {
+            padding: 10px 12px;
+            font-size: 12px;
+            font-family: 'Courier New', Courier, monospace;
+            color: #e0e0e0;
+            word-break: break-all;
+            line-height: 1.7;
+            min-height: 38px;
+            white-space: pre-wrap;
+        }
+
+        .copy-btn {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            background: transparent;
+            cursor: pointer;
+            color: #666;
+            font-family: 'Courier New', Courier, monospace;
+            transition: background 0.15s;
+        }
+
+        .copy-btn:hover { background: #222; color: #ccc; }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .status.ok    { background: #0d2b1e; color: #4ade80; border: 1px solid #1a5c38; }
+        .status.fail  { background: #2b0d0d; color: #f87171; border: 1px solid #5c1a1a; }
+        .status.info  { background: #1a1a1a; color: #888;    border: 1px solid #2a2a2a; }
+
+        .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: currentColor;
+            flex-shrink: 0;
+        }
+
+        .divider {
+            height: 1px;
+            background: #2a2a2a;
+            margin: 1.5rem 0;
+        }
+
+        .note {
+            font-size: 12px;
+            color: #555;
+            line-height: 1.7;
+        }
+
+        @media (max-width: 520px) {
+            .row { grid-template-columns: 1fr; }
+            .title-row { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="title-row">
+        <h1>crypto lab</h1>
+        <span class="badge">SHA-256</span>
+        <span class="badge">AES-256-GCM</span>
+        <span class="badge">PBKDF2</span>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('encrypt')">encrypt</button>
+        <button class="tab" onclick="switchTab('decrypt')">decrypt + verify</button>
+    </div>
+
+    <!-- ENCRYPT PANEL -->
+    <div id="panel-encrypt" class="panel active">
+
+        <div class="field">
+            <label>plaintext message</label>
+            <textarea id="enc-input" placeholder="enter your message here..."></textarea>
+        </div>
+
+        <div class="field">
+            <label>passphrase (used to derive AES-256 key via PBKDF2)</label>
+            <input type="text" id="enc-pass" placeholder="e.g. my-secret-passphrase-2024" />
+            <div class="hint">leave blank to use a default internal key</div>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn primary" onclick="doEncrypt()">encrypt + hash →</button>
+            <button class="btn" onclick="clearEncrypt()">clear</button>
+        </div>
+
+        <div id="enc-status" class="status info" style="display:none"></div>
+
+        <div id="enc-outputs" style="display:none">
+            <div class="output-block">
+                <div class="output-header">
+                    <span class="output-label">sha-256 hash (integrity fingerprint)</span>
+                    <button class="copy-btn" onclick="copyVal('out-hash')">copy</button>
+                </div>
+                <div class="output-val" id="out-hash"></div>
+            </div>
+
+            <div class="output-block">
+                <div class="output-header">
+                    <span class="output-label">AES-GCM ciphertext (base64)</span>
+                    <button class="copy-btn" onclick="copyVal('out-cipher')">copy</button>
+                </div>
+                <div class="output-val" id="out-cipher"></div>
+            </div>
+
+            <div class="output-block">
+                <div class="output-header">
+                    <span class="output-label">IV — initialization vector (base64)</span>
+                    <button class="copy-btn" onclick="copyVal('out-iv')">copy</button>
+                </div>
+                <div class="output-val" id="out-iv"></div>
+            </div>
+
+            <div class="output-block">
+                <div class="output-header">
+                    <span class="output-label">salt (base64)</span>
+                    <button class="copy-btn" onclick="copyVal('out-salt')">copy</button>
+                </div>
+                <div class="output-val" id="out-salt"></div>
+            </div>
+
+            <div class="divider"></div>
+            <p class="note">copy the ciphertext, IV, salt, and hash into the <strong>decrypt tab</strong> to verify integrity and recover the original message.</p>
+        </div>
+    </div>
+
+    <div id="panel-decrypt" class="panel">
+
+        <div class="row">
+            <div class="field">
+                <label>ciphertext (base64)</label>
+                <textarea id="dec-cipher" placeholder="paste ciphertext..." style="min-height:70px"></textarea>
+            </div>
+            <div class="field">
+                <label>IV (base64)</label>
+                <textarea id="dec-iv" placeholder="paste IV..." style="min-height:70px"></textarea>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="field">
+                <label>salt (base64)</label>
+                <textarea id="dec-salt" placeholder="paste salt..." style="min-height:70px"></textarea>
+            </div>
+            <div class="field">
+                <label>expected sha-256 hash</label>
+                <textarea id="dec-hash" placeholder="paste original hash..." style="min-height:70px"></textarea>
+            </div>
+        </div>
+
+        <div class="field">
+            <label>passphrase</label>
+            <input type="text" id="dec-pass" placeholder="same passphrase used during encryption" />
+        </div>
+
+        <div class="btn-row">
+            <button class="btn primary" onclick="doDecrypt()">decrypt + verify integrity →</button>
+            <button class="btn" onclick="clearDecrypt()">clear</button>
+        </div>
+
+        <div id="dec-status" class="status info" style="display:none"></div>
+
+        <div id="dec-outputs" style="display:none">
+            <div class="output-block">
+                <div class="output-header">
+                    <span class="output-label">decrypted plaintext</span>
+                    <button class="copy-btn" onclick="copyVal('out-plain')">copy</button>
+                </div>
+                <div class="output-val" id="out-plain"></div>
+            </div>
+
+            <div class="output-block">
+                <div class="output-header">
+                    <span class="output-label">computed sha-256 hash (of decrypted text)</span>
+                </div>
+                <div class="output-val" id="out-computed-hash"></div>
+            </div>
+
+            <div id="integrity-result"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function switchTab(t) {
+        document.querySelectorAll('.tab').forEach((b, i) => {
+            b.classList.toggle('active', ['encrypt', 'decrypt'][i] === t);
+        });
+        document.querySelectorAll('.panel').forEach(p => {
+            p.classList.toggle('active', p.id === `panel-${t}`);
+        });
+    }
+
+    function buf2b64(buf) {
+        return btoa(String.fromCharCode(...new Uint8Array(buf)));
+    }
+
+    function b642buf(s) {
+        return Uint8Array.from(atob(s), c => c.charCodeAt(0));
+    }
+
+    function buf2hex(buf) {
+        return Array.from(new Uint8Array(buf))
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('');
+    }
+
+    async function sha256(text) {
+        const encoded = new TextEncoder().encode(text);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
+        return buf2hex(hashBuffer);
+    }
+
+    async function deriveKey(passphrase, salt) {
+        const enc = new TextEncoder();
+        const keyMaterial = await crypto.subtle.importKey(
+            'raw',
+            enc.encode(passphrase || '__default_internal_key__'),
+            { name: 'PBKDF2' },
+            false,
+            ['deriveKey']
+        );
+        return crypto.subtle.deriveKey(
+            { name: 'PBKDF2', salt, iterations: 200000, hash: 'SHA-256' },
+            keyMaterial,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['encrypt', 'decrypt']
+        );
+    }
+
+    async function doEncrypt() {
+        const message = document.getElementById('enc-input').value.trim();
+        if (!message) {
+            showStatus('enc-status', 'info', 'please enter a message first.');
+            return;
+        }
+
+        try {
+            showStatus('enc-status', 'info', 'hashing and encrypting…');
+
+            const hash = await sha256(message);
+
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const iv   = crypto.getRandomValues(new Uint8Array(12));
+
+            const passphrase = document.getElementById('enc-pass').value;
+            const key = await deriveKey(passphrase, salt);
+
+            const encoded    = new TextEncoder().encode(message);
+            const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
+
+            document.getElementById('out-hash').textContent   = hash;
+            document.getElementById('out-cipher').textContent = buf2b64(ciphertext);
+            document.getElementById('out-iv').textContent     = buf2b64(iv);
+            document.getElementById('out-salt').textContent   = buf2b64(salt);
+            document.getElementById('enc-outputs').style.display = 'block';
+
+            showStatus('enc-status', 'ok', 'encrypted successfully. copy all four values to the decrypt tab.');
+        } catch (err) {
+            showStatus('enc-status', 'fail', 'encryption error: ' + err.message);
+        }
+    }
+
+    async function doDecrypt() {
+        const cipherB64   = document.getElementById('dec-cipher').value.trim();
+        const ivB64       = document.getElementById('dec-iv').value.trim();
+        const saltB64     = document.getElementById('dec-salt').value.trim();
+        const expectedHash = document.getElementById('dec-hash').value.trim();
+        const passphrase  = document.getElementById('dec-pass').value;
+
+        if (!cipherB64 || !ivB64 || !saltB64) {
+            showStatus('dec-status', 'info', 'please fill in ciphertext, IV, and salt.');
+            return;
+        }
+
+        try {
+            showStatus('dec-status', 'info', 'decrypting…');
+
+            const key = await deriveKey(passphrase, b642buf(saltB64));
+
+            const plainBuffer = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv: b642buf(ivB64) },
+                key,
+                b642buf(cipherB64)
+            );
+
+            const plainText = new TextDecoder().decode(plainBuffer);
+
+            const computedHash = await sha256(plainText);
+
+            document.getElementById('out-plain').textContent         = plainText;
+            document.getElementById('out-computed-hash').textContent = computedHash;
+
+            const ir = document.getElementById('integrity-result');
+            if (!expectedHash) {
+                ir.innerHTML = `<div class="status info"><div class="dot"></div>decryption succeeded — no reference hash provided, integrity check skipped.</div>`;
+            } else if (computedHash === expectedHash) {
+                ir.innerHTML = `<div class="status ok"><div class="dot"></div>integrity verified — computed hash matches expected hash. message is authentic and unmodified.</div>`;
+            } else {
+                ir.innerHTML = `<div class="status fail"><div class="dot"></div>integrity check failed — hashes do not match. message may have been tampered with.</div>`;
+            }
+
+            document.getElementById('dec-outputs').style.display = 'block';
+            showStatus('dec-status', 'ok', 'decryption complete.');
+
+        } catch (err) {
+            showStatus('dec-status', 'fail', 'decryption failed — wrong passphrase, corrupted data, or tampered ciphertext.');
+        }
+    }
+
+    function showStatus(id, type, msg) {
+        const el = document.getElementById(id);
+        el.style.display = 'flex';
+        el.className = `status ${type}`;
+        el.innerHTML = `<div class="dot"></div>${msg}`;
+    }
+
+    function copyVal(id) {
+        const text = document.getElementById(id).textContent;
+        navigator.clipboard.writeText(text).catch(() => {});
+    }
+
+    function clearEncrypt() {
+        ['enc-input', 'enc-pass'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('enc-outputs').style.display = 'none';
+        document.getElementById('enc-status').style.display  = 'none';
+    }
+
+    function clearDecrypt() {
+        ['dec-cipher', 'dec-iv', 'dec-salt', 'dec-hash', 'dec-pass']
+            .forEach(id => document.getElementById(id).value = '');
+        document.getElementById('dec-outputs').style.display  = 'none';
+        document.getElementById('dec-status').style.display   = 'none';
+        document.getElementById('integrity-result').innerHTML = '';
+    }
+</script>
+</body>
+</html>
